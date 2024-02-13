@@ -286,6 +286,7 @@ export class OpenIdAuthentication extends AuthenticationType {
 
         // if no id_token from refresh token call, maybe the Idp doesn't allow refresh id_token
         if (refreshTokenResponse.idToken) {
+          console.log('successfully in refresh flow')
           cookie.credentials = {
             authHeaderValueExtra: true,
             refresh_token: refreshTokenResponse.refreshToken,

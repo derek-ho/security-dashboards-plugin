@@ -28,6 +28,35 @@ import {
   ILegacyClusterClient,
   SessionStorageFactory,
 } from '../../../../../../src/core/server';
+import { BrowserSessionStorageFactory, SecurityAuthSessionStorageKey } from '../authentication_type.test';
+
+jest.mock('./helper', () => ({
+  ...jest.requireActual('./helper'),
+  callTokenEndpoint: jest.fn().mockImplementation(() => {
+    return {idToken:'eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJSaHFsWXdKaTFXR1FJV0d6LUtsMklCUklDQTh0Y3loa1ZMdmk1eDZ2WmxRIn0.eyJleHAiOjkyMDg5NDQwMDAwMDAwfQ==.nsNfG5xxJWU24CcmgOBvJEKRKpoY81noHCO9_is4tLdX7grLz8HcQIFsrQaWTpPkIIbb7lc8FkYOlkwbnC9L5MX7lhfoJdPmG_Eh7uJl3RSIHm743gTmWmOeK8s5OPJnNibyfeUMpdH244jZ__uUchz3IrXKwt8pSvIKvGAFSgykkBtPghaePz4XOqNrOHvbP5bqKeoJGSSmHq_4b0bF0d_WQaPrQuduOJ545bTcfUJe38jWPPB1C4MywR1w1fzC0yg7DZFliPrLNXFwKSPd_CYwzLf1hwmr0vEd9I6QXAZo5BcAe9hVlX0mgZZ1H8FNqwvWd4rQKoDDnQMKs7NpsQ', refreshToken: 'blah'}
+  }),
+}));
+
+jest.mock('../../session/cookie_splitter.ts', () => ({
+  ...jest.requireActual('./helper'),
+  callTokenEndpoint: jest.fn().mockImplementation(() => {
+    return {idToken:'eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJSaHFsWXdKaTFXR1FJV0d6LUtsMklCUklDQTh0Y3loa1ZMdmk1eDZ2WmxRIn0.eyJleHAiOjkyMDg5NDQwMDAwMDAwfQ==.nsNfG5xxJWU24CcmgOBvJEKRKpoY81noHCO9_is4tLdX7grLz8HcQIFsrQaWTpPkIIbb7lc8FkYOlkwbnC9L5MX7lhfoJdPmG_Eh7uJl3RSIHm743gTmWmOeK8s5OPJnNibyfeUMpdH244jZ__uUchz3IrXKwt8pSvIKvGAFSgykkBtPghaePz4XOqNrOHvbP5bqKeoJGSSmHq_4b0bF0d_WQaPrQuduOJ545bTcfUJe38jWPPB1C4MywR1w1fzC0yg7DZFliPrLNXFwKSPd_CYwzLf1hwmr0vEd9I6QXAZo5BcAe9hVlX0mgZZ1H8FNqwvWd4rQKoDDnQMKs7NpsQ', refreshToken: 'blah'}
+  }),
+}));
+
+const mockedNow = 0;
+Date.now = jest.fn(() => mockedNow);
+
+class MockESClient {
+  asScoped(request: OpenSearchDashboardsRequest) {
+      return {
+          async callAsCurrentUser(action: string, params: any) {
+              // Dummy implementation, replace it with desired dummy value
+              return { dummy: 'value' };
+          }
+      };
+  }
+}
 
 interface Logger {
   debug(message: string): void;
@@ -55,6 +84,9 @@ describe('test OpenId authHeaderValue', () => {
         additional_cookies: 5,
       },
     },
+    auth: {
+      unauthenticated_routes: []
+    }
   } as unknown) as SecurityPluginConfigType;
 
   const logger = {
@@ -207,4 +239,54 @@ describe('test OpenId authHeaderValue', () => {
     expect(wreckHttpsOptions.cert).toBeUndefined();
     expect(wreckHttpsOptions.passphrase).toBeUndefined();
   });
+
+  test('OpenID cookie expiry time is based on IDP', async () => {
+    const oidcConfig = ({
+      openid: {
+        header: 'authorization',
+        scope: [],
+        extra_storage: {
+          cookie_prefix: 'testcookie',
+          additional_cookies: 5,
+        },
+      },
+      auth: {
+        unauthenticated_routes: []
+      },
+      session:{
+        keepalive: false
+      }
+    } as unknown) as SecurityPluginConfigType;
+    const openIdAuthentication = new OpenIdAuthentication(
+      oidcConfig,
+      new BrowserSessionStorageFactory(SecurityAuthSessionStorageKey),
+      router,
+      new MockESClient(),
+      core,
+      logger
+    );
+    const cookie: SecuritySessionCookie = {
+      credentials: {
+        authHeaderValue: 'Bearer eyToken',
+        refresh_token: 'blah'
+      },
+      username: 'admin',
+      expiryTime: -1,
+      authType: 'openid'
+    };
+    sessionStorage.setItem(SecurityAuthSessionStorageKey, JSON.stringify(cookie));
+
+    const mockRequest = httpServerMock.createOpenSearchDashboardsRequest({
+      path: '/api/v1',
+    });
+
+    // Mock response and toolkit functions
+    const responseMock = jest.fn();
+    const toolkitMock = {
+      authenticated: jest.fn((value) => value),
+    };
+
+    const _ = await openIdAuthentication.authHandler(mockRequest, responseMock, toolkitMock);
+    console.log(JSON.parse(sessionStorage.getItem(SecurityAuthSessionStorageKey)!))
+  })
 });

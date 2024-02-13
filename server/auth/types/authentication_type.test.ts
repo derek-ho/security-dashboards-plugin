@@ -29,6 +29,8 @@ import { SecuritySessionCookie } from '../../session/security_cookie';
 const mockedNow = 0;
 Date.now = jest.fn(() => mockedNow);
 
+export const SecurityAuthSessionStorageKey = 'security_cookie';
+
 class DummyAuthType extends AuthenticationType {
   authNotRequired(request: OpenSearchDashboardsRequest): boolean {
     return false;
@@ -74,7 +76,7 @@ class BrowserSessionStorage<T> implements SessionStorage<T> {
 }
 
 // Implementation of SessionStorageFactory using the browser's sessionStorage
-class BrowserSessionStorageFactory<T> implements SessionStorageFactory<T> {
+export class BrowserSessionStorageFactory<T> implements SessionStorageFactory<T> {
   private readonly storageKey: string;
 
   constructor(storageKey: string) {
@@ -174,7 +176,7 @@ describe('test tenant header', () => {
     } as SecurityPluginConfigType;
     const keepAliveDummyAuth = new DummyAuthType(
       keepAliveConfig,
-      new BrowserSessionStorageFactory('security_cookie'),
+      new BrowserSessionStorageFactory(SecurityAuthSessionStorageKey),
       router,
       esClient,
       coreSetup,
@@ -187,7 +189,7 @@ describe('test tenant header', () => {
       expiryTime: 2000,
     };
     // Set cookie
-    sessionStorage.setItem('security_cookie', JSON.stringify(testCookie));
+    sessionStorage.setItem(SecurityAuthSessionStorageKey, JSON.stringify(testCookie));
     const request = httpServerMock.createOpenSearchDashboardsRequest({
       path: '/internal/v1',
     });
@@ -196,7 +198,7 @@ describe('test tenant header', () => {
       authenticated: jest.fn((value) => value),
     };
     const _ = await keepAliveDummyAuth.authHandler(request, response, toolkit);
-    const cookieAfterRequest = sessionStorage.getItem('security_cookie');
+    const cookieAfterRequest = sessionStorage.getItem(SecurityAuthSessionStorageKey);
     expect(JSON.parse(cookieAfterRequest!).expiryTime).toBe(2000);
   });
 });

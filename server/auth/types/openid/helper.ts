@@ -130,6 +130,8 @@ export interface TokenResponse {
 }
 
 export function getExpirationDate(tokenResponse: TokenResponse | undefined) {
+  console.log('AIHWEGHIOAHERGIOHAER')
+  console.log(tokenResponse)
   if (!tokenResponse) {
     throw new Error('Invalid token');
   } else if (tokenResponse.idToken) {
@@ -138,6 +140,7 @@ export function getExpirationDate(tokenResponse: TokenResponse | undefined) {
     if (parts.length !== 3) {
       throw new Error('Invalid token');
     }
+    console.log(parts)
     const claim = JSON.parse(Buffer.from(parts[1], 'base64').toString());
     return claim.exp * 1000;
   } else {

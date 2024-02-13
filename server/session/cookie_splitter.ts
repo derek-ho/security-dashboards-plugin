@@ -125,6 +125,7 @@ export function splitValueIntoCookies(
   for (let i = 1; i <= additionalCookies; i++) {
     values.push(value.substring((i - 1) * splitValueAt, i * splitValueAt));
   }
+  console.log(rawRequest.cookieAuth)
 
   values.forEach(async (cookieSplitValue: string, index: number) => {
     const cookieName: string = cookiePrefix + (index + 1);
