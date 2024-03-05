@@ -33,6 +33,7 @@ import { Action } from '../types';
 import { ResourceType } from '../../../../common';
 import { API_ENDPOINT_CACHE, DocLinks } from '../constants';
 import { ExternalLink, ExternalLinkButton } from '../utils/display-utils';
+import { httpDelete } from '../utils/request-utils';
 
 const addBackendStep = {
   title: 'Add backends',
@@ -230,7 +231,7 @@ export function GetStarted(props: AppDependencies) {
               iconType="refresh"
               fill
               onClick={() => {
-                props.coreStart.http.delete(API_ENDPOINT_CACHE);
+                httpDelete(props.coreStart.http, API_ENDPOINT_CACHE, {dataSourceId: '84e72d90-db00-11ee-baf1-55ab53c9cfb9'});
               }}
             >
               Purge cache

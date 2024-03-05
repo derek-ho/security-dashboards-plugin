@@ -24,7 +24,7 @@ import { API_PREFIX, CONFIGURATION_API_PREFIX, isValidResourceName } from '../..
 import { ResourceType } from '../../common';
 
 // TODO: consider to extract entity CRUD operations and put it into a client class
-export function defineRoutes(router: IRouter) {
+export function defineRoutes(router: IRouter, dataSourceEnabled: boolean) {
   const internalUserSchema = schema.object({
     description: schema.maybe(schema.string()),
     password: schema.maybe(schema.string()),
@@ -745,9 +745,14 @@ export function defineRoutes(router: IRouter) {
   router.delete(
     {
       path: `${API_PREFIX}/configuration/cache`,
-      validate: false,
+      validate: {
+        body: schema.object({
+          dataSourceId: schema.maybe(schema.string()),
+        })
+      }
     },
     async (context, request, response) => {
+      if (!dataSourceEnabled) {
       const client = context.security_plugin.esClient.asScoped(request);
       let esResponse;
       try {
@@ -760,7 +765,24 @@ export function defineRoutes(router: IRouter) {
       } catch (error) {
         return errorResponse(response, error);
       }
+    } else {
+      console.log(request.body)
+      const client = context.dataSource.opensearch.legacy.getClient(request.body?.dataSourceId);
+      let esResponse;
+      try{
+        esResponse = await client.callAPI('opensearch_security.clearCache', {});
+        console.log(esResponse)
+        return response.ok({
+          body: {
+            message: 'test',
+          },
+        });
+      } catch (error) {
+        return errorResponse(response, error);
+      }
     }
+
+  }
   );
 
   /**
