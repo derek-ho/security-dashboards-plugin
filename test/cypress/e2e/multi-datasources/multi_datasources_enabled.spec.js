@@ -12,9 +12,19 @@
  *   express or implied. See the License for the specific language governing
  *   permissions and limitations under the License.
  */
+import { ADMIN_AUTH } from '../../support/constants';
+
+Cypress.Commands.overwrite('visit', (orig, url, options = {}) => {
+  if (Cypress.env('LOGIN_AS_ADMIN')) {
+    options.auth = ADMIN_AUTH;
+  }
+  orig(url, options);
+});
 
 const createDataSource = () => {
-  cy.visit('http://localhost:5601/app/management/opensearch-dashboards/dataSources/create');
+  cy.visit('http://localhost:5601/app/management/opensearch-dashboards/dataSources/create', {
+    failOnStatusCode: false,
+  });
   cy.get('[data-test-subj="createDataSourceFormTitleField"]').focus().type('9202');
   cy.get('[data-test-subj="createDataSourceFormEndpointField"]')
     .focus()

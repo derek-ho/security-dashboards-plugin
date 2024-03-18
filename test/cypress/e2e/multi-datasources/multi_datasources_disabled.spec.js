@@ -12,6 +12,14 @@
  *   express or implied. See the License for the specific language governing
  *   permissions and limitations under the License.
  */
+import { ADMIN_AUTH } from '../../support/constants';
+
+Cypress.Commands.overwrite('visit', (orig, url, options = {}) => {
+  if (Cypress.env('LOGIN_AS_ADMIN')) {
+    options.auth = ADMIN_AUTH;
+  }
+  orig(url, options);
+});
 
 describe('Multi-datasources enabled', () => {
   it('Sanity checks the cluster selector is not visible when multi datasources is disabled', () => {
