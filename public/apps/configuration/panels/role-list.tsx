@@ -116,7 +116,7 @@ export function RoleList(props: AppDependencies) {
         const rawRoleData = await fetchRole(props.coreStart.http, undefined, {
           dataSourceId: dataSource.id,
         });
-        const rawRoleMappingData = await fetchRoleMapping(props.coreStart.http);
+        const rawRoleMappingData = await fetchRoleMapping(props.coreStart.http, undefined, {dataSourceId: dataSource.id});
         const processedData = transformRoleData(rawRoleData, rawRoleMappingData);
         setRoleData(processedData);
       } catch (e) {
@@ -133,7 +133,7 @@ export function RoleList(props: AppDependencies) {
   const handleDelete = async () => {
     const rolesToDelete: string[] = selection.map((r) => r.roleName);
     try {
-      await requestDeleteRoles(props.coreStart.http, rolesToDelete);
+      await requestDeleteRoles(props.coreStart.http, rolesToDelete, {dataSourceId: dataSource.id});
       // Refresh from server (calling fetchData) does not work here, the server still return the roles
       // that had been just deleted, probably because ES takes some time to sync to all nodes.
       // So here remove the selected roles from local memory directly.

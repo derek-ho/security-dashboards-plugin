@@ -85,9 +85,11 @@ export async function requestWithIgnores<T>(
 export async function httpGetWithIgnores<T>(
   http: HttpStart,
   url: string,
-  ignores: number[]
+  ignores: number[],
+  body?: object,
+  query?: HttpFetchQuery,
 ): Promise<T | undefined> {
-  return await requestWithIgnores<T>(http.get, url, ignores);
+  return await requestWithIgnores<T>(http.get, url, ignores, body, query);
 }
 
 export async function httpPostWithIgnores<T>(
