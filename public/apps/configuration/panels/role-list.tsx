@@ -13,7 +13,7 @@
  *   permissions and limitations under the License.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   EuiFlexGroup,
   EuiText,
@@ -54,6 +54,8 @@ import { showTableStatusMessage } from '../utils/loading-spinner-utils';
 import { useDeleteConfirmState } from '../utils/delete-confirm-modal-utils';
 import { useContextMenuState } from '../utils/context-menu';
 import { DocLinks } from '../constants';
+import { DataSourceContext } from '../app-router';
+import { SecurityPluginTopNavMenu } from '../top-nav-menu';
 
 const columns: Array<EuiBasicTableColumn<RoleListing>> = [
   {
@@ -105,12 +107,15 @@ export function RoleList(props: AppDependencies) {
   const [errorFlag, setErrorFlag] = React.useState(false);
   const [selection, setSelection] = React.useState<RoleListing[]>([]);
   const [loading, setLoading] = useState(false);
+  const { dataSource, setDataSource } = useContext(DataSourceContext)!;
 
   React.useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const rawRoleData = await fetchRole(props.coreStart.http);
+        const rawRoleData = await fetchRole(props.coreStart.http, undefined, {
+          dataSourceId: dataSource.id,
+        });
         const rawRoleMappingData = await fetchRoleMapping(props.coreStart.http);
         const processedData = transformRoleData(rawRoleData, rawRoleMappingData);
         setRoleData(processedData);
@@ -123,7 +128,7 @@ export function RoleList(props: AppDependencies) {
     };
 
     fetchData();
-  }, [props.coreStart.http]);
+  }, [props.coreStart.http, dataSource.id]);
 
   const handleDelete = async () => {
     const rolesToDelete: string[] = selection.map((r) => r.roleName);
@@ -250,6 +255,12 @@ export function RoleList(props: AppDependencies) {
 
   return (
     <>
+      <SecurityPluginTopNavMenu
+        {...props}
+        dataSourcePickerReadOnly={false}
+        setDataSource={setDataSource}
+        selectedDataSource={dataSource}
+      />
       <EuiPageHeader>
         <EuiTitle size="l">
           <h1>Roles</h1>

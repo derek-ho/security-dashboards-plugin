@@ -23,6 +23,10 @@ import { ResourceType } from '../../../../../common';
 import { RoleListing } from '../../utils/role-list-utils';
 import { useDeleteConfirmState } from '../../utils/delete-confirm-modal-utils';
 
+jest.mock('react', () => ({
+  ...jest.requireActual('react'),
+  useContext: jest.fn().mockReturnValue({ dataSource: { id: 'test' }, setDataSource: jest.fn() }), // Mock the useContext hook to return dummy datasource and setdatasource function
+}));
 jest.mock('../../utils/role-list-utils');
 jest.mock('../../utils/display-utils', () => ({
   ...jest.requireActual('../../utils/display-utils'),

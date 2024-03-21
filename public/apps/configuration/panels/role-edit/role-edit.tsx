@@ -24,7 +24,7 @@ import {
   EuiText,
   EuiTitle,
 } from '@elastic/eui';
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { isEmpty } from 'lodash';
 import { BreadcrumbsPageDependencies } from '../../../types';
 import { CLUSTER_PERMISSIONS, DocLinks, INDEX_PERMISSIONS } from '../../constants';
@@ -57,6 +57,8 @@ import { setCrossPageToast } from '../../utils/storage-utils';
 import { ExternalLink } from '../../utils/display-utils';
 import { generateResourceName } from '../../utils/resource-utils';
 import { NameRow } from '../../utils/name-row';
+import { DataSourceContext } from '../../app-router';
+import { SecurityPluginTopNavMenu } from '../../top-nav-menu';
 
 interface RoleEditDeps extends BreadcrumbsPageDependencies {
   action: 'create' | 'edit' | 'duplicate';
@@ -85,6 +87,7 @@ export function RoleEdit(props: RoleEditDeps) {
   const [toasts, addToast, removeToast] = useToastState();
 
   const [isFormValid, setIsFormValid] = useState<boolean>(true);
+  const { dataSource, setDataSource } = useContext(DataSourceContext)!;
 
   React.useEffect(() => {
     const action = props.action;
@@ -146,11 +149,16 @@ export function RoleEdit(props: RoleEditDeps) {
         (v: RoleTenantPermissionStateClass) => !isEmpty(v.tenantPatterns)
       );
 
-      await updateRole(props.coreStart.http, roleName, {
-        cluster_permissions: roleClusterPermission.map(comboBoxOptionToString),
-        index_permissions: unbuildIndexPermissionState(validIndexPermission),
-        tenant_permissions: unbuildTenantPermissionState(validTenantPermission),
-      });
+      await updateRole(
+        props.coreStart.http,
+        roleName,
+        {
+          cluster_permissions: roleClusterPermission.map(comboBoxOptionToString),
+          index_permissions: unbuildIndexPermissionState(validIndexPermission),
+          tenant_permissions: unbuildTenantPermissionState(validTenantPermission),
+        },
+        { dataSourceId: dataSource.id }
+      );
 
       setCrossPageToast(buildUrl(ResourceType.roles, Action.view, roleName), {
         id: 'updateRoleSucceeded',
@@ -215,6 +223,12 @@ export function RoleEdit(props: RoleEditDeps) {
 
   return (
     <>
+      <SecurityPluginTopNavMenu
+        {...props}
+        dataSourcePickerReadOnly={true}
+        setDataSource={setDataSource}
+        selectedDataSource={dataSource}
+      />
       {props.buildBreadcrumbs(TITLE_TEXT_DICT[props.action])}
       <EuiPageHeader>
         <EuiText size="xs" color="subdued" className="panel-header-subtext">

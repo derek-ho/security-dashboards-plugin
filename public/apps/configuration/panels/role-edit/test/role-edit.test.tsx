@@ -24,6 +24,11 @@ import { IndexPermissionPanel } from '../index-permission-panel';
 import { getSuccessToastMessage, RoleEdit } from '../role-edit';
 import { TenantPanel } from '../tenant-panel';
 
+jest.mock('react', () => ({
+  ...jest.requireActual('react'),
+  useContext: jest.fn().mockReturnValue({ dataSource: { id: 'test' }, setDataSource: jest.fn() }), // Mock the useContext hook to return dummy datasource and setdatasource function
+}));
+
 jest.mock('../../../utils/role-detail-utils', () => ({
   getRoleDetail: jest.fn().mockReturnValue({
     cluster_permissions: [],

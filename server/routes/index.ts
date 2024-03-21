@@ -434,6 +434,7 @@ export function defineRoutes(router: IRouter, dataSourceEnabled: boolean) {
       validate: {
         params: schema.object({
           resourceName: schema.string(),
+          dataSourceId: schema.maybe(schema.string()),
         }),
         body: schema.any(),
       },
@@ -479,6 +480,9 @@ export function defineRoutes(router: IRouter, dataSourceEnabled: boolean) {
             validate: validateEntityId,
           }),
         }),
+        query: schema.object({
+          dataSourceId: schema.maybe(schema.string()),
+        }),
         body: schema.any(),
       },
     },
@@ -492,14 +496,19 @@ export function defineRoutes(router: IRouter, dataSourceEnabled: boolean) {
       } catch (error) {
         return response.badRequest({ body: error });
       }
-      const client = context.security_plugin.esClient.asScoped(request);
-      let esResp;
       try {
-        esResp = await client.callAsCurrentUser('opensearch_security.saveResource', {
-          resourceName: request.params.resourceName,
-          id: request.params.id,
-          body: request.body,
-        });
+        const esResp = await wrapRouteWithDataSource(
+          dataSourceEnabled,
+          context,
+          request,
+          'opensearch_security.saveResource',
+          {
+            resourceName: request.params.resourceName,
+            id: request.params.id,
+            body: request.body,
+          }
+        );
+
         return response.ok({
           body: {
             message: esResp.message,

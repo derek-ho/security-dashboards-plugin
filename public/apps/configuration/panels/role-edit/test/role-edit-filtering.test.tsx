@@ -43,6 +43,11 @@ jest.mock('../index-permission-panel', () => ({
   IndexPermissionPanel: jest.fn(() => null) as jest.Mock,
 }));
 
+jest.mock('react', () => ({
+  ...jest.requireActual('react'),
+  useContext: jest.fn().mockReturnValue({ dataSource: { id: 'test' }, setDataSource: jest.fn() }), // Mock the useContext hook to return dummy datasource and setdatasource function
+}));
+
 describe('Role edit filtering', () => {
   const sampleSourceRole = 'role';
   const mockCoreStart = {
@@ -94,7 +99,7 @@ describe('Role edit filtering', () => {
         sourceRoleName={sampleSourceRole}
         buildBreadcrumbs={buildBreadcrumbs}
         coreStart={mockCoreStart as any}
-        navigation={{} as any}
+        depsStart={{} as any}
         params={{} as any}
         config={{} as any}
       />
@@ -150,7 +155,7 @@ describe('Role edit filtering', () => {
         sourceRoleName={sampleSourceRole}
         buildBreadcrumbs={buildBreadcrumbs}
         coreStart={mockCoreStart as any}
-        navigation={{} as any}
+        depsStart={{} as any}
         params={{} as any}
         config={{} as any}
       />

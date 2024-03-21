@@ -36,8 +36,13 @@ export async function httpGet<T>(
   return await request<T>(http.get, url, body, query);
 }
 
-export async function httpPost<T>(http: HttpStart, url: string, body?: object): Promise<T> {
-  return await request<T>(http.post, url, body);
+export async function httpPost<T>(
+  http: HttpStart,
+  url: string,
+  body?: object,
+  query?: HttpFetchQuery
+): Promise<T> {
+  return await request<T>(http.post, url, body, query);
 }
 
 export async function httpPut<T>(http: HttpStart, url: string, body?: object): Promise<T> {
@@ -65,10 +70,11 @@ export async function requestWithIgnores<T>(
   requestFunc: HttpHandler,
   url: string,
   ignores: number[],
-  body?: object
+  body?: object,
+  query?: HttpFetchQuery
 ): Promise<T | undefined> {
   try {
-    return await request<T>(requestFunc, url, body);
+    return await request<T>(requestFunc, url, body, query);
   } catch (e) {
     if (!ignores.includes(e?.response?.status)) {
       throw e;
@@ -95,7 +101,9 @@ export async function httpPostWithIgnores<T>(
 export async function httpDeleteWithIgnores<T>(
   http: HttpStart,
   url: string,
-  ignores: number[]
+  ignores: number[],
+  body?: object,
+  query?: HttpFetchQuery
 ): Promise<T | undefined> {
-  return await requestWithIgnores<T>(http.delete, url, ignores);
+  return await requestWithIgnores<T>(http.delete, url, ignores, body, query);
 }
