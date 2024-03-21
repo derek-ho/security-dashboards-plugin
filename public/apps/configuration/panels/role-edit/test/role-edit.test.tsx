@@ -121,11 +121,16 @@ describe('Role edit', () => {
     // click update
     component.find(EuiButton).last().simulate('click');
 
-    expect(updateRole).toBeCalledWith(mockCoreStart.http, '', {
-      cluster_permissions: [],
-      index_permissions: [],
-      tenant_permissions: [],
-    });
+    expect(updateRole).toBeCalledWith(
+      mockCoreStart.http,
+      '',
+      {
+        cluster_permissions: [],
+        index_permissions: [],
+        tenant_permissions: [],
+      },
+      { dataSourceId: 'test' }
+    );
 
     process.nextTick(() => {
       expect(setCrossPageToast).toHaveBeenCalled();
