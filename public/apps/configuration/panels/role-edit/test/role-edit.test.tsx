@@ -38,6 +38,10 @@ jest.mock('../../../utils/action-groups-utils', () => ({
 }));
 jest.mock('../../../utils/tenant-utils');
 jest.mock('../../../utils/storage-utils');
+jest.mock('react', () => ({
+  ...jest.requireActual('react'),
+  useContext: jest.fn().mockReturnValue({ dataSource: { id: 'test' }, setDataSource: jest.fn() }), // Mock the useContext hook to return dummy datasource and setdatasource function
+}));
 
 describe('Role edit', () => {
   const sampleSourceRole = 'role';

@@ -22,6 +22,21 @@ interface RequestType {
   query?: HttpFetchQuery;
 }
 
+interface RequestTypeWithIgnores extends RequestType {
+  ignores: number[];
+}
+
+interface RequestTypeHandler {
+  requestFunc: HttpHandler;
+  url: string;
+  body?: object;
+  query?: HttpFetchQuery;
+}
+
+interface RequestTypeHandlerWithIgnores extends RequestTypeHandler {
+  ignores: number[];
+}
+
 export async function request<T>(
   requestFunc: HttpHandler,
   url: string,
@@ -59,13 +74,11 @@ export async function httpDelete<T>(params: RequestType): Promise<T> {
  * @param ignores the error codes to be ignored
  */
 export async function requestWithIgnores<T>(
-  requestFunc: HttpHandler,
-  url: string,
-  ignores: number[],
-  body?: object
+  params: RequestTypeHandlerWithIgnores
 ): Promise<T | undefined> {
+  const { requestFunc, url, body, ignores, query } = params;
   try {
-    return await request<T>(requestFunc, url, body);
+    return await request<T>(requestFunc, url, body, query);
   } catch (e) {
     if (!ignores.includes(e?.response?.status)) {
       throw e;
@@ -74,25 +87,15 @@ export async function requestWithIgnores<T>(
 }
 
 export async function httpGetWithIgnores<T>(
-  http: HttpStart,
-  url: string,
-  ignores: number[]
+  params: RequestTypeWithIgnores
 ): Promise<T | undefined> {
-  return await requestWithIgnores<T>(http.get, url, ignores);
-}
-
-export async function httpPostWithIgnores<T>(
-  http: HttpStart,
-  url: string,
-  ignores: number[]
-): Promise<T | undefined> {
-  return await requestWithIgnores<T>(http.post, url, ignores);
+  const { http, url, ignores } = params;
+  return await requestWithIgnores<T>({ requestFunc: http.get, url, ignores });
 }
 
 export async function httpDeleteWithIgnores<T>(
-  http: HttpStart,
-  url: string,
-  ignores: number[]
+  params: RequestTypeWithIgnores
 ): Promise<T | undefined> {
-  return await requestWithIgnores<T>(http.delete, url, ignores);
+  const { http, url, ignores, query } = params;
+  return await requestWithIgnores<T>({ requestFunc: http.delete, url, ignores, query });
 }

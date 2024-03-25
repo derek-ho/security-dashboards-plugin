@@ -13,7 +13,7 @@
  *   permissions and limitations under the License.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 
 import {
   EuiButton,
@@ -70,6 +70,8 @@ import { showTableStatusMessage } from '../../utils/loading-spinner-utils';
 import { useContextMenuState } from '../../utils/context-menu';
 import { requestDeleteRoles } from '../../utils/role-list-utils';
 import { setCrossPageToast } from '../../utils/storage-utils';
+import { DataSourceContext } from '../../app-router';
+import { SecurityPluginTopNavMenu } from '../../top-nav-menu';
 
 interface RoleViewProps extends BreadcrumbsPageDependencies {
   roleName: string;
@@ -108,6 +110,7 @@ export function RoleView(props: RoleViewProps) {
   const [toasts, addToast, removeToast] = useToastState();
   const [isReserved, setIsReserved] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
+  const { dataSource, setDataSource } = useContext(DataSourceContext)!;
 
   const PERMISSIONS_TAB_INDEX = 0;
   const MAP_USER_TAB_INDEX = 1;
@@ -116,15 +119,15 @@ export function RoleView(props: RoleViewProps) {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const originalRoleMapData = await getRoleMappingData(props.coreStart.http, props.roleName);
+        const originalRoleMapData = await getRoleMappingData(props.coreStart.http, props.roleName, {dataSourceId: dataSource.id});
         if (originalRoleMapData) {
           setMappedUsers(transformRoleMappingData(originalRoleMapData));
           setHosts(originalRoleMapData.hosts);
         }
 
-        const actionGroups = await fetchActionGroups(props.coreStart.http);
+        const actionGroups = await fetchActionGroups(props.coreStart.http, {dataSourceId: dataSource.id});
         setActionGroupDict(actionGroups);
-        const roleData = await getRoleDetail(props.coreStart.http, props.roleName);
+        const roleData = await getRoleDetail(props.coreStart.http, props.roleName, {dataSourceId: dataSource.id});
         setIsReserved(roleData.reserved);
         setRoleClusterPermission(roleData.cluster_permissions);
         setRoleIndexPermission(transformRoleIndexPermissions(roleData.index_permissions));
@@ -139,7 +142,7 @@ export function RoleView(props: RoleViewProps) {
     };
 
     fetchData();
-  }, [addToast, props.coreStart.http, props.roleName, props.prevAction]);
+  }, [addToast, props.coreStart.http, props.roleName, props.prevAction, dataSource.id]);
 
   const handleRoleMappingDelete = async () => {
     try {
@@ -384,6 +387,12 @@ export function RoleView(props: RoleViewProps) {
 
   return (
     <>
+      <SecurityPluginTopNavMenu
+        {...props}
+        dataSourcePickerReadOnly={true}
+        setDataSource={setDataSource}
+        selectedDataSource={dataSource}
+      />
       {props.buildBreadcrumbs(props.roleName)}
 
       <EuiPageContentHeader>

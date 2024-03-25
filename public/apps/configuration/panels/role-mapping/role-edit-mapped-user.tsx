@@ -23,7 +23,7 @@ import {
   EuiTitle,
   EuiGlobalToastList,
 } from '@elastic/eui';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { BreadcrumbsPageDependencies } from '../../../types';
 import { InternalUsersPanel } from './users-panel';
 import {
@@ -43,6 +43,8 @@ import { createErrorToast, createUnknownErrorToast, useToastState } from '../../
 import { DocLinks } from '../../constants';
 import { setCrossPageToast } from '../../utils/storage-utils';
 import { ExternalLink } from '../../utils/display-utils';
+import { SecurityPluginTopNavMenu } from '../../top-nav-menu';
+import { DataSourceContext } from '../../app-router';
 
 interface RoleEditMappedUserProps extends BreadcrumbsPageDependencies {
   roleName: string;
@@ -60,13 +62,15 @@ export function RoleEditMappedUser(props: RoleEditMappedUserProps) {
   const [userNames, setUserNames] = useState<string[]>([]);
   const [hosts, setHosts] = React.useState<string[]>([]);
   const [toasts, addToast, removeToast] = useToastState();
+  const { dataSource, setDataSource } = useContext(DataSourceContext)!;
 
   React.useEffect(() => {
     const fetchData = async () => {
       try {
         const originalRoleMapData: RoleMappingDetail | undefined = await getRoleMappingData(
           props.coreStart.http,
-          props.roleName
+          props.roleName, 
+          {dataSourceId: dataSource.id}
         );
         if (originalRoleMapData) {
           setInternalUsers(originalRoleMapData.users.map(stringToComboBoxOption));
@@ -80,7 +84,7 @@ export function RoleEditMappedUser(props: RoleEditMappedUserProps) {
     };
 
     fetchData();
-  }, [addToast, props.coreStart.http, props.roleName]);
+  }, [addToast, props.coreStart.http, props.roleName, dataSource.id]);
 
   React.useEffect(() => {
     const fetchInternalUserNames = async () => {
@@ -135,6 +139,12 @@ export function RoleEditMappedUser(props: RoleEditMappedUserProps) {
 
   return (
     <>
+      <SecurityPluginTopNavMenu
+        {...props}
+        dataSourcePickerReadOnly={true}
+        setDataSource={setDataSource}
+        selectedDataSource={dataSource}
+      />
       {props.buildBreadcrumbs(props.roleName, TITLE_TEXT_DICT[SubAction.mapuser])}
       <EuiPageHeader>
         <EuiText size="xs" color="subdued">

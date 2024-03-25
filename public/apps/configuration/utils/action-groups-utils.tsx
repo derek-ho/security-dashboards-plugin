@@ -13,7 +13,7 @@
  *   permissions and limitations under the License.
  */
 
-import { HttpStart } from 'opensearch-dashboards/public';
+import { HttpFetchQuery, HttpStart } from 'opensearch-dashboards/public';
 import { map } from 'lodash';
 import { API_ENDPOINT_ACTIONGROUPS, CLUSTER_PERMISSIONS, INDEX_PERMISSIONS } from '../constants';
 import { DataObject, ActionGroupItem, ActionGroupUpdate, ObjectsMessage } from '../types';
@@ -29,10 +29,11 @@ export interface PermissionListingItem {
   hasIndexPermission: boolean;
 }
 
-export async function fetchActionGroups(http: HttpStart): Promise<DataObject<ActionGroupItem>> {
+export async function fetchActionGroups(http: HttpStart, query?: HttpFetchQuery): Promise<DataObject<ActionGroupItem>> {
   const actiongroups = await httpGet<ObjectsMessage<ActionGroupItem>>({
     http,
     url: API_ENDPOINT_ACTIONGROUPS,
+    query
   });
   return actiongroups.data;
 }
