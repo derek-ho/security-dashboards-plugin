@@ -62,15 +62,6 @@ async function hasApiPermission(core: CoreSetup): Promise<boolean | undefined> {
   }
 }
 
-const DEFAULT_READONLY_ROLES = ['kibana_read_only'];
-const APP_ID_HOME = 'home';
-const APP_ID_DASHBOARDS = 'dashboards';
-// OpenSearchDashboards app is for legacy url migration
-const APP_ID_OPENSEARCH_DASHBOARDS = 'kibana';
-const APP_LIST_FOR_READONLY_ROLE = [APP_ID_HOME, APP_ID_DASHBOARDS, APP_ID_OPENSEARCH_DASHBOARDS];
-const GLOBAL_TENANT_RENDERING_TEXT = 'Global';
-const PRIVATE_TENANT_RENDERING_TEXT = 'Private';
-
 export class SecurityPlugin
   implements
     Plugin<
@@ -86,100 +77,38 @@ export class SecurityPlugin
     core: CoreSetup,
     deps: SecurityPluginSetupDependencies
   ): Promise<SecurityPluginSetup> {
-    const apiPermission = await hasApiPermission(core);
-
     const config = this.initializerContext.config.get<ClientConfigType>();
 
-    const accountInfo = (await fetchAccountInfoSafe(core.http))?.data;
-    const multitenancyEnabled = (await getDashboardsInfoSafe(core.http))?.multitenancy_enabled;
-    const isReadonly = accountInfo?.roles.some((role) =>
-      (config.readonly_mode?.roles || DEFAULT_READONLY_ROLES).includes(role)
-    );
+    core.application.register({
+      id: PLUGIN_NAME,
+      title: 'Security',
+      order: 9050,
+      mount: async (params: AppMountParameters) => {
+        const { renderApp } = await import('./apps/configuration/configuration-app');
+        const [coreStart, depsStart] = await core.getStartServices();
 
-    if (apiPermission) {
-      core.application.register({
+        // merge OpenSearchDashboards yml configuration
+        includeClusterPermissions(config.clusterPermissions.include);
+        includeIndexPermissions(config.indexPermissions.include);
+
+        excludeFromDisabledTransportCategories(config.disabledTransportCategories.exclude);
+        excludeFromDisabledRestCategories(config.disabledRestCategories.exclude);
+
+        return renderApp(coreStart, depsStart as SecurityPluginStartDependencies, params, config);
+      },
+      category: DEFAULT_APP_CATEGORIES.management,
+    });
+
+    if (deps.managementOverview) {
+      deps.managementOverview.register({
         id: PLUGIN_NAME,
         title: 'Security',
         order: 9050,
-        mount: async (params: AppMountParameters) => {
-          const { renderApp } = await import('./apps/configuration/configuration-app');
-          const [coreStart, depsStart] = await core.getStartServices();
-
-          // merge OpenSearchDashboards yml configuration
-          includeClusterPermissions(config.clusterPermissions.include);
-          includeIndexPermissions(config.indexPermissions.include);
-
-          excludeFromDisabledTransportCategories(config.disabledTransportCategories.exclude);
-          excludeFromDisabledRestCategories(config.disabledRestCategories.exclude);
-
-          return renderApp(coreStart, depsStart as SecurityPluginStartDependencies, params, config);
-        },
-        category: DEFAULT_APP_CATEGORIES.management,
+        description: i18n.translate('security.securityDescription', {
+          defaultMessage:
+            'Configure how users access data in OpenSearch with authentication, access control and audit logging.',
+        }),
       });
-
-      if (deps.managementOverview) {
-        deps.managementOverview.register({
-          id: PLUGIN_NAME,
-          title: 'Security',
-          order: 9050,
-          description: i18n.translate('security.securityDescription', {
-            defaultMessage:
-              'Configure how users access data in OpenSearch with authentication, access control and audit logging.',
-          }),
-        });
-      }
-    }
-
-    core.application.register({
-      id: APP_ID_LOGIN,
-      title: 'Security',
-      chromeless: true,
-      appRoute: LOGIN_PAGE_URI,
-      mount: async (params: AppMountParameters) => {
-        const { renderApp } = await import('./apps/login/login-app');
-        // @ts-ignore depsStart not used.
-        const [coreStart, depsStart] = await core.getStartServices();
-        return renderApp(coreStart, params, config);
-      },
-    });
-
-    core.application.register({
-      id: APP_ID_CUSTOMERROR,
-      title: 'Security',
-      chromeless: true,
-      appRoute: CUSTOM_ERROR_PAGE_URI,
-      mount: async (params: AppMountParameters) => {
-        const { renderPage } = await import('./apps/customerror/custom-error');
-        const [coreStart] = await core.getStartServices();
-        return renderPage(coreStart, params, config);
-      },
-    });
-
-    core.application.registerAppUpdater(
-      new BehaviorSubject<AppUpdater>((app) => {
-        if (!apiPermission && isReadonly && !APP_LIST_FOR_READONLY_ROLE.includes(app.id)) {
-          return {
-            status: AppStatus.inaccessible,
-          };
-        }
-      })
-    );
-
-    if (
-      multitenancyEnabled &&
-      config.multitenancy.enabled &&
-      config.multitenancy.enable_aggregation_view
-    ) {
-      deps.savedObjectsManagement.columns.register(
-        (tenantColumn as unknown) as SavedObjectsManagementColumn<string>
-      );
-      if (!!accountInfo) {
-        const namespacesToRegister = getNamespacesToRegister(accountInfo);
-        deps.savedObjectsManagement.namespaces.registerAlias('Tenant');
-        namespacesToRegister.forEach((ns) => {
-          deps.savedObjectsManagement.namespaces.register(ns as SavedObjectsManagementNamespace);
-        });
-      }
     }
 
     // Return methods that should be available to other plugins
@@ -187,20 +116,6 @@ export class SecurityPlugin
   }
 
   public start(core: CoreStart, deps: SecurityPluginStartDependencies): SecurityPluginStart {
-    const config = this.initializerContext.config.get<ClientConfigType>();
-
-    setupTopNavButton(core, config);
-
-    if (config.ui.autologout) {
-      // logout the user when getting 401 unauthorized, e.g. when session timed out.
-      core.http.intercept({
-        responseError: interceptError(config.auth.logout_url, window),
-      });
-    }
-
-    if (config.multitenancy.enabled) {
-      addTenantToShareURL(core);
-    }
     return {};
   }
 

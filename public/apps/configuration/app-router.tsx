@@ -59,18 +59,6 @@ const ROUTE_MAP: { [key: string]: RouteItem } = {
     name: 'Permissions',
     href: buildUrl(ResourceType.permissions),
   },
-  [ResourceType.tenants]: {
-    name: 'Tenants',
-    href: buildUrl(ResourceType.tenants),
-  },
-  [ResourceType.tenantsManageTab]: {
-    name: 'TenantsManageTab',
-    href: buildUrl(ResourceType.tenantsManageTab),
-  },
-  [ResourceType.tenantsConfigureTab]: {
-    name: '',
-    href: buildUrl(ResourceType.tenantsConfigureTab),
-  },
   [ResourceType.auth]: {
     name: 'Authentication',
     href: buildUrl(ResourceType.auth),
@@ -87,9 +75,7 @@ const ROUTE_LIST = [
   ROUTE_MAP[ResourceType.roles],
   ROUTE_MAP[ResourceType.users],
   ROUTE_MAP[ResourceType.permissions],
-  ROUTE_MAP[ResourceType.tenants],
   ROUTE_MAP[ResourceType.auditLogging],
-  ROUTE_MAP[ResourceType.tenantsConfigureTab],
 ];
 
 const allNavPanelUrls = ROUTE_LIST.map((route) => route.href).concat([
@@ -236,20 +222,6 @@ export function AppRouter(props: AppDependencies) {
               render={() => {
                 setGlobalBreadcrumbs(ResourceType.permissions);
                 return <PermissionList {...props} />;
-              }}
-            />
-            <Route
-              path={ROUTE_MAP.tenants.href}
-              render={() => {
-                setGlobalBreadcrumbs(ResourceType.tenants);
-                return <TenantList tabID={'Manage'} {...props} />;
-              }}
-            />
-            <Route
-              path={ROUTE_MAP.tenantsConfigureTab.href}
-              render={() => {
-                setGlobalBreadcrumbs(ResourceType.tenants);
-                return <TenantList tabID={'Configure'} {...props} />;
               }}
             />
             <Route
